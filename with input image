@@ -1,0 +1,73 @@
+import numpy as np 
+import matplotlib.pyplot as plt 
+from tensorflow.keras.models import Model 
+from tensorflow.keras.layers import Input, Conv2D, MaxPooling2D, UpSampling2D 
+from PIL import Image 
+
+# Step 1: Load and Preprocess the Image 
+image_path = 'C:\\Users\\Student\\Downloads\\a.jfif' 
+image = Image.open(image_path).convert('L') # Convert to grayscale 
+image_resized = image.resize((28, 28)) # Resize to 28x28 pixels 
+
+# Normalize the pixel values to the range [0, 1] 
+image_array = np.array(image_resized).astype('float32') / 255. 
+image_array = np.reshape(image_array, (1, 28, 28, 1)) # Add batch and channel dimensions 
+
+# Add random noise to the image 
+noise_factor = 0.5 
+image_noisy = image_array + noise_factor * np.random.normal(loc=0.0, scale=1.0, 
+size=image_array.shape) 
+image_noisy = np.clip(image_noisy, 0., 1.) 
+
+# Step 2: Define the Autoencoder Model 
+# Encoder 
+input_img = Input(shape=(28, 28, 1)) 
+x = Conv2D(32, (3, 3), activation='relu', padding='same')(input_img) 
+x = MaxPooling2D((2, 2), padding='same')(x) 
+x = Conv2D(32, (3, 3), activation='relu', padding='same')(x) 
+encoded = MaxPooling2D((2, 2), padding='same')(x) 
+
+# Decoder 
+x = Conv2D(32, (3, 3), activation='relu', padding='same')(encoded) 
+x = UpSampling2D((2, 2))(x) 
+x = Conv2D(32, (3, 3), activation='relu', padding='same')(x) 
+x = UpSampling2D((2, 2))(x) 
+decoded = Conv2D(1, (3, 3), activation='sigmoid', padding='same')(x) 
+
+# Combine into a model 
+autoencoder = Model(input_img, decoded) 
+autoencoder.compile(optimizer='adam', loss='binary_crossentropy') 
+
+# Step 3: Train the Autoencoder 
+autoencoder.fit( 
+    image_noisy, image_array, 
+    epochs=10,  # Reduced the number of epochs for quick testing
+    batch_size=1, 
+    shuffle=True 
+) 
+
+# Step 4: Denoise the Image 
+decoded_img = autoencoder.predict(image_noisy) 
+
+# Plot original, noisy, and denoised images 
+plt.figure(figsize=(10, 4)) 
+
+# Display original image 
+ax = plt.subplot(1, 3, 1) 
+plt.imshow(image_array[0].reshape(28, 28), cmap='gray') 
+plt.title("Original") 
+plt.axis('off') 
+
+# Display noisy image 
+ax = plt.subplot(1, 3, 2) 
+plt.imshow(image_noisy[0].reshape(28, 28), cmap='gray') 
+plt.title("Noisy") 
+plt.axis('off') 
+
+# Display denoised image 
+ax = plt.subplot(1, 3, 3) 
+plt.imshow(decoded_img[0].reshape(28, 28), cmap='gray') 
+plt.title("Denoised") 
+plt.axis('off') 
+plt.tight_layout() 
+plt.show()
