@@ -1,0 +1,50 @@
+import numpy as np 
+import matplotlib.pyplot as plt 
+from tensorflow.keras.layers import Input, Dense 
+from tensorflow.keras.models import Model 
+from tensorflow.keras.datasets import mnist 
+
+# Load dataset 
+(x_train, _), (x_test, _) = mnist.load_data() 
+x_test = x_test / 255.0 # Normalize 
+x_test = x_test.reshape(-1, 28*28) # Flatten 
+
+# Select one image 
+single_image = x_test[0].reshape(1, 784) 
+
+# Define encoder 
+input_img = Input(shape=(784,)) 
+encoded = Dense(128, activation='relu')(input_img) 
+encoded = Dense(64, activation='relu')(encoded) 
+encoded = Dense(32, activation='relu')(encoded) 
+
+# Define decoder 
+decoded = Dense(64, activation='relu')(encoded) 
+decoded = Dense(128, activation='relu')(decoded) 
+decoded = Dense(784, activation='sigmoid')(decoded) # Output shape same as input 
+
+# Build autoencoder model 
+autoencoder = Model(input_img, decoded) 
+autoencoder.compile(optimizer='adam', loss='mse') 
+
+# Train model 
+autoencoder.fit(single_image, single_image, epochs=500, verbose=0) # Training only on one image 
+
+# Encode and decode the image 
+decoded_img = autoencoder.predict(single_image) 
+
+# Display results 
+plt.figure(figsize=(6, 3)) 
+
+# Original Image 
+plt.subplot(1, 2, 1) 
+plt.imshow(single_image.reshape(28, 28), cmap="gray") 
+plt.title("Original") 
+plt.axis("off") 
+
+# Reconstructed Image 
+plt.subplot(1, 2, 2) 
+plt.imshow(decoded_img.reshape(28, 28), cmap="gray") 
+plt.title("Reconstructed") 
+plt.axis("off") 
+plt.show()
