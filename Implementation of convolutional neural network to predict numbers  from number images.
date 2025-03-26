@@ -1,0 +1,66 @@
+import tensorflow as tf 
+from tensorflow.keras import layers, models 
+import numpy as np 
+import matplotlib.pyplot as plt 
+
+# Step 1: Load and preprocess the MNIST dataset 
+(train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.mnist.load_data() 
+
+# Normalize the images to a range of [0, 1] 
+train_images = train_images / 255.0 
+test_images = test_images / 255.0 
+
+# Reshape the images to add a channel dimension (28x28x1) 
+train_images = train_images.reshape((train_images.shape[0], 28, 28, 1)) 
+test_images = test_images.reshape((test_images.shape[0], 28, 28, 1)) 
+
+# Convert labels to categorical format (one-hot encoding) 
+train_labels = tf.keras.utils.to_categorical(train_labels, 10) 
+test_labels = tf.keras.utils.to_categorical(test_labels, 10) 
+
+# Step 2: Build the CNN model 
+model = models.Sequential([ 
+    # First convolutional layer (filters=32, kernel_size=3x3, ReLU activation)
+    layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)), 
+    layers.MaxPooling2D((2, 2)), # Max pooling layer (2x2 pool size) 
+
+    # Second convolutional layer 
+    layers.Conv2D(64, (3, 3), activation='relu'), 
+    layers.MaxPooling2D((2, 2)), 
+
+    # Third convolutional layer 
+    layers.Conv2D(64, (3, 3), activation='relu'), 
+
+    # Flatten the output and pass it to a fully connected layer 
+    layers.Flatten(), 
+    layers.Dense(64, activation='relu'), 
+    # Output layer with 10 units (one for each digit) and softmax activation 
+    layers.Dense(10, activation='softmax') 
+]) 
+
+# Print the model summary 
+model.summary() 
+
+# Step 3: Compile the model 
+model.compile(optimizer='adam', 
+              loss='categorical_crossentropy', 
+              metrics=['accuracy']) 
+
+# Step 4: Train the model 
+history = model.fit(train_images, train_labels, epochs=1, batch_size=64, 
+                    validation_data=(test_images, test_labels)) 
+
+# Step 5: Evaluate the model on the test data 
+test_loss, test_acc = model.evaluate(test_images, test_labels) 
+print(f'Test accuracy: {test_acc}') 
+
+# Step 6: Make predictions 
+predictions = model.predict(test_images) 
+
+# Display the predicted label for the first test image 
+print(f'Predicted label: {np.argmax(predictions[5])}') 
+
+# Display the image 
+plt.imshow(test_images[5].reshape(28, 28), cmap='gray') 
+plt.title(f"Predicted: {np.argmax(predictions[5])}") 
+plt.show()
